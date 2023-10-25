@@ -4,6 +4,20 @@ const app = express();
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
+app.use((req, res, next)=>{
+	console.log(`${req.method} - ${req.url}`);
+	next();
+})
+
+const getIsAuthOrized = (req, res, next) =>{
+	const {authorization} = req.headers
+	if(authorization && auth.some(el => el.token === authorization) !== false){
+		next();
+	}else{
+		res.status(403).json({message: 'invalid authorization'});
+	}
+}
+
 // fake super sophisticated 'database table'
 const users = [
 	{_id: 1, name: 'John'},
@@ -14,11 +28,7 @@ const auth = [
 	{_id: 1, user_id: 1, token: 'abc123'}
 ]
 
-const getAuth = (token) =>{
-	if(token == null){return false}
-	const isAuthorized = auth.some(el => el.token === token)
-	return isAuthorized;
-}
+
 
 app.listen(3000, ()=>{
 	console.log('server is running on port 3000')
@@ -62,19 +72,13 @@ app.get('/user-by-name/:name', (req, res)=>{
 	}
 });
 
-app.post('/user', (req, res)=>{
-	const isAuthorized = getAuth(req.headers.authorization)
+app.post('/user', getIsAuthOrized, (req, res)=>{
+	const {name} = req.body;
+	const id = users.length+1;
+	users.push({
+		_id: id,
+		name: name
+	})
 
-	if(!isAuthorized){
-		res.sendStatus(403)
-	}else{
-		const {name} = req.body;
-		const id = users.length+1;
-		users.push({
-			_id: id,
-			name: name
-		})
-
-		res.status(201).json({users});
-	}
+	res.status(201).json({users});
 });
