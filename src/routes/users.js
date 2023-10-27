@@ -25,10 +25,12 @@ router.use((req, res, next)=>{ //dependency injection here
 });
 
 router.get('/', (req, res)=>{
-	res.status(200);
-	res.json({
-		users: req.dbService.getUsers(),
-	})
+	try {
+		const users = req.dbService.getUsers();
+		return res.status(200).json({users})
+	} catch (error) {
+		return res.status(500)
+	}
 });
 
 router.get('/name/:name', [
@@ -39,21 +41,32 @@ router.get('/name/:name', [
 		return res.status(400).json({errors:errors.array()})
 	}
 
-	const {name} = matchedData(req)
-	res.status(200);
-	res.json({
-		users: req.dbService.getUserByName(name),
-	})
+	try{
+		const {name} = matchedData(req)
+		const user = req.dbService.getUserByName(name)
+		return res.status(200).json({user})
+	}catch(error){
+		return res.status(500)
+	}
+
+	
 })
 
 router.get('/id/:id', [
 	param('id').notEmpty().escape()
 ], (req,res)=>{
-	const {id} = matchedData(req);
-	res.status(200);
-	res.json({
-		users: req.dbService.getUserById(parseInt(id, 10)),
-	})
+	const errors = validationResult(req);
+	if(!errors.isEmpty()){
+		return res.status(400).json({errors:errors.array()})
+	}
+
+	try {
+		const {id} = matchedData(req);
+		const user = req.dbService.getUserById(parseInt(id, 10));
+		return res.status(200).json({user})
+	} catch (error) {
+		return res.status(500)
+	}
 })
 
 module.exports = router;
