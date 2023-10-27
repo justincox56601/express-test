@@ -1,84 +1,34 @@
 const express = require('express');
+const expressSession = require('express-session');
+const userRoute = require('./src/routes/users');
+const authRouter = require('./src/routes/auth');
+const dotenv = require("dotenv")
+dotenv.config()
+
+const store = new expressSession.MemoryStore(); //using a memory store instead of a DB because this is a test project
 const app = express();
+const port = process.env.PORT || 5000
+
+app.use(expressSession({
+	secret: 'secret secret',
+	cookie: {maxAge: 30*60*1000}, //30 minutes * 60 seconds/min * 1000ms/second
+	saveUninitialized: false,
+	resave: false,
+	store
+}));
+
+app.use((req, res, next)=>{
+	req.store = store; //adding the memory store to the request so can check authentication
+
+	next();
+});
 
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
-app.use((req, res, next)=>{
-	console.log(`${req.method} - ${req.url}`);
-	next();
-})
+app.use('/users', userRoute);
+app.use('/login', authRouter);
 
-const getIsAuthOrized = (req, res, next) =>{
-	const {authorization} = req.headers
-	if(authorization && auth.some(el => el.token === authorization) !== false){
-		next();
-	}else{
-		res.status(403).json({message: 'invalid authorization'});
-	}
-}
-
-// fake super sophisticated 'database table'
-const users = [
-	{_id: 1, name: 'John'},
-	{_id: 2, name: 'Jane'},
-	{_id: 3, name: 'Penny'}
-];
-const auth = [
-	{_id: 1, user_id: 1, token: 'abc123'}
-]
-
-
-
-app.listen(3000, ()=>{
-	console.log('server is running on port 3000')
-});
-
-app.get('/', (req, res)=>{
-	res.json({
-		message: 'Hello World'
-	})
-});
-
-app.get('/users', (req, res)=>{
-	res.status(200).json({users})
-});
-
-app.get('/user-by-id/:id', (req, res)=>{
-	const {id} = req.params
-	if(id == null){
-		res.sendStatus(404);
-	}
-
-	const user = users.find(el => el._id === parseInt(id, 10))
-	if(user != null){
-		res.status(200).json({user})
-	}else{
-		res.sendStatus(404);
-	}
-});
-
-app.get('/user-by-name/:name', (req, res)=>{
-	const {name} = req.params;
-	if(name == null){
-		res.sendStatus(404);
-	}
-
-	const user = users.find(el => el.name === name)
-	if(user != null){
-		res.status(200).json({user})
-	}else{
-		res.sendStatus(404)
-	}
-});
-
-app.post('/user', getIsAuthOrized, (req, res)=>{
-	const {name} = req.body;
-	const id = users.length+1;
-	users.push({
-		_id: id,
-		name: name
-	})
-
-	res.status(201).json({users});
+app.listen(port, ()=>{
+	console.log(`server is running on port ${port}`)
 });
