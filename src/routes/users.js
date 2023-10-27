@@ -11,7 +11,6 @@ const router = Router()
 
 router.use((req, res, next)=>{ //validate client is logged in before using route
 	const {sessionID} = req;
-	console.log(req.store.sessions[sessionID])
 	if(req.store.sessions[sessionID] == null){
 		return res.status(403).json({msg: 'Not Authenticated'})
 	}
